@@ -17,3 +17,6 @@ Thumbs.db
 # 临时目录
 _inspect/
 _stage/
+_koyeb/
+*.zip
+.vercel/

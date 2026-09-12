@@ -9,11 +9,15 @@
  *   - getSongUrl(id) -> string
  * 参考: https://sunzongzheng.github.io/musicApi/
  */
-const http = require('http');
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -39,37 +43,30 @@ const COMMON_HEADERS = {
   'Accept-Language': 'zh-CN,zh;q=0.9'
 };
 
-/** 发起 https 请求并返回 { status, headers, body }，自动跟随最多 5 次重定向 */
-function request(method, fullUrl, { headers = {}, body = null, redirects = 5 } = {}) {
-  return new Promise((resolve, reject) => {
-    let u;
-    try { u = new URL(fullUrl); } catch (e) { return reject(new Error('invalid url: ' + fullUrl)); }
-    const lib = u.protocol === 'http:' ? http : https;
-    const options = {
+/** 发起 HTTP(S) 请求并返回 { status, headers, body }
+ *  使用全局 fetch（Node 18+ 原生，兼容 Vercel Serverless），自动跟随重定向 */
+async function request(method, fullUrl, { headers = {}, body = null } = {}) {
+  let u;
+  try { u = new URL(fullUrl); } catch (e) { throw new Error('invalid url: ' + fullUrl); }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const init = {
       method,
-      hostname: u.hostname,
-      port: u.port || (u.protocol === 'http:' ? 80 : 443),
-      path: u.pathname + u.search,
-      headers: { ...COMMON_HEADERS, ...headers }
+      headers: { ...COMMON_HEADERS, ...headers },
+      signal: controller.signal,
+      redirect: 'follow'
     };
-    const req = lib.request(options, (res) => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
-        let next = res.headers.location;
-        if (next.startsWith('/')) next = `${u.protocol}//${u.host}${next}`;
-        res.resume();
-        return resolve(request(method, next, { headers, body, redirects: redirects - 1 }));
-      }
-      // 用 Buffer 数组收集，最后合并再用 utf8 解码
-      // 避免在 chunk 边界切断多字节 UTF-8 字符导致中文变成 '?'
-      const chunks = [];
-      res.on('data', (c) => chunks.push(c));
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
-    });
-    req.on('error', reject);
-    req.setTimeout(15000, () => req.destroy(new Error('timeout')));
-    if (body) req.write(body);
-    req.end();
-  });
+    if (body) init.body = body;
+    const resp = await fetch(fullUrl, init);
+    // resp.text() 按 UTF-8 解码，与旧实现一致
+    const text = await resp.text();
+    const respHeaders = {};
+    resp.headers.forEach((value, key) => { respHeaders[key] = value; });
+    return { status: resp.status, headers: respHeaders, body: text };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function safeJSON(str) {
@@ -305,26 +302,16 @@ async function recognizeHumming(audioBase64, appId, apiKey) {
     const checkSum = crypto.createHash('md5').update(apiKey + curTime + xParam).digest('hex');
 
     // 请求讯飞 API
-    const res = await new Promise((resolve, reject) => {
-      const req = https.request('https://webqbh.xfyun.cn/v1/service/v1/qbh', {
-        method: 'POST',
-        headers: {
-          'X-Appid': appId,
-          'X-CurTime': curTime,
-          'X-Param': xParam,
-          'X-CheckSum': checkSum,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': audioBytes.length
-        }
-      }, (res) => {
-        const chunks = [];
-        res.on('data', (c) => chunks.push(c));
-        res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
-      });
-      req.on('error', reject);
-      req.setTimeout(15000, () => req.destroy(new Error('timeout')));
-      req.write(audioBytes);
-      req.end();
+    const res = await request('POST', 'https://webqbh.xfyun.cn/v1/service/v1/qbh', {
+      headers: {
+        'X-Appid': appId,
+        'X-CurTime': curTime,
+        'X-Param': xParam,
+        'X-CheckSum': checkSum,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': audioBytes.length
+      },
+      body: audioBytes
     });
 
     const json = safeJSON(res.body) || {};
@@ -403,22 +390,12 @@ async function recognizeACR(audioBytes, acrAccessKey, acrAccessSecret) {
     const body = Buffer.concat(parts);
 
     // 发起请求
-    const res = await new Promise((resolve, reject) => {
-      const r = https.request('https://identify-cn-north-1.acrcloud.cn/v1/identify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': `multipart/form-data; boundary=${boundary}`,
-          'Content-Length': body.length
-        }
-      }, (resp) => {
-        const chunks = [];
-        resp.on('data', (c) => chunks.push(c));
-        resp.on('end', () => resolve({ status: resp.statusCode, body: Buffer.concat(chunks).toString('utf8') }));
-      });
-      r.on('error', reject);
-      r.setTimeout(15000, () => r.destroy(new Error('timeout')));
-      r.write(body);
-      r.end();
+    const res = await request('POST', 'https://identify-cn-north-1.acrcloud.cn/v1/identify', {
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': body.length
+      },
+      body
     });
 
     const json = safeJSON(res.body) || {};
@@ -557,7 +534,8 @@ function readBody(req, limit = 5 * 1024 * 1024) {
 }
 
 // ---------- 路由 ----------
-const server = http.createServer(async (req, res) => {
+// 导出请求处理器：本地 http 服务器与 Vercel Serverless 函数共用
+export async function handler(req, res) {
   const u = new URL(req.url, `http://${req.headers.host}`);
   const pathname = u.pathname;
 
@@ -608,7 +586,7 @@ const server = http.createServer(async (req, res) => {
         const url = u.searchParams.get('url');
         if (!url) return sendJSON(res, { error: 'url required' }, 400);
         try {
-          const check = await request('HEAD', url, { headers: COMMON_HEADERS, redirects: 2 });
+          const check = await request('HEAD', url, { headers: COMMON_HEADERS });
           return sendJSON(res, { playable: check.status === 200, status: check.status });
         } catch (e) {
           return sendJSON(res, { playable: false, error: e.message });
@@ -692,21 +670,27 @@ const server = http.createServer(async (req, res) => {
   }
   countReq(false, false);
   return serveStatic(req, res);
-});
+}
 
-server.listen(PORT, '0.0.0.0', () => {
-  const nets = require('os').networkInterfaces();
-  const ips = [];
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+// 仅在本地直接运行 node server.js 时监听端口；
+// 被 Vercel 函数 import 时不启动监听
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const server = http.createServer(handler);
+  server.listen(PORT, '0.0.0.0', () => {
+    const nets = os.networkInterfaces();
+    const ips = [];
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) ips.push(net.address);
+      }
     }
-  }
-  console.log(`\n  ♪ 开源音乐 已启动`);
-  console.log(`  ➜  本机访问:   http://localhost:${PORT}`);
-  if (ips.length) {
-    console.log(`  ➜  局域网访问: ${ips.map((ip) => `http://${ip}:${PORT}`).join('   ')}`);
-    console.log(`  ℹ️  若局域网无法访问，请放行 Windows 防火墙 ${PORT} 端口`);
-  }
-  console.log('');
-});
+    console.log(`\n  ♪ 开源音乐 已启动`);
+    console.log(`  ➜  本机访问:   http://localhost:${PORT}`);
+    if (ips.length) {
+      console.log(`  ➜  局域网访问: ${ips.map((ip) => `http://${ip}:${PORT}`).join('   ')}`);
+      console.log(`  ℹ️  若局域网无法访问，请放行 Windows 防火墙 ${PORT} 端口`);
+    }
+    console.log('');
+  });
+}
