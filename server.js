@@ -14,13 +14,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const APP_DIR = (typeof __dirname !== 'undefined')
+  ? __dirname
+  : path.dirname(path.resolve(process.argv[1] || 'server.js'));
 
 const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_DIR = path.join(APP_DIR, 'public');
 
 /** 全局统计（内存中，重启清零） */
 const serverStats = {
@@ -674,7 +674,10 @@ export async function handler(req, res) {
 
 // 仅在本地直接运行 node server.js 时监听端口；
 // 被 Vercel 函数 import 时不启动监听
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isMain = !process.env.AWS_LAMBDA_FUNCTION_NAME && (
+  (typeof require !== 'undefined' && require.main === module)
+  || (process.argv[1] && path.basename(process.argv[1]) === 'server.js')
+);
 if (isMain) {
   const server = http.createServer(handler);
   server.listen(PORT, '0.0.0.0', () => {
