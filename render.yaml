@@ -1,0 +1,9 @@
+# Render 部署配置：https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: liquid-music
+    runtime: node
+    plan: free
+    buildCommand: echo "no build step (zero-dependency)"
+    startCommand: node server.js
+    autoDeploy: true

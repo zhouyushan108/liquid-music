@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# 随 LAN 启动器分发的 Node 运行时与打包产物（体积大，不进仓库）
+node.exe
+app.zip
+
+# 环境变量与密钥
+.env
+.env.local
+
+# 日志与系统文件
+*.log
+.DS_Store
+Thumbs.db
+
+# 临时目录
+_inspect/
+_stage/

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a1c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="开源音乐" />
+  <title>开源音乐 · 液态玻璃音乐</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c9bff'/%3E%3Cstop%20offset='1'%20stop-color='%23c08bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='24'%20height='24'%20rx='5'%20fill='url(%23g)'/%3E%3Cpath%20d='M9%2018V5l12-2v13'%20fill='none'%20stroke='%23fff'%20stroke-width='1.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='6'%20cy='18'%20r='2.4'%20fill='%23fff'/%3E%3Ccircle%20cx='18'%20cy='16'%20r='2.4'%20fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c9bff'/%3E%3Cstop%20offset='1'%20stop-color='%23c08bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='24'%20height='24'%20rx='5'%20fill='url(%23g)'/%3E%3Cpath%20d='M9%2018V5l12-2v13'%20fill='none'%20stroke='%23fff'%20stroke-width='1.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='6'%20cy='18'%20r='2.4'%20fill='%23fff'/%3E%3Ccircle%20cx='18'%20cy='16'%20r='2.4'%20fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://p1.music.126.net" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- SVG 液态玻璃滤镜（边缘折射 + 高光） -->
+  <svg style="position:absolute;width:0;height:0" aria-hidden="true">
+    <defs>
+      <filter id="liquid-glass" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="4" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="2" result="softNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="var(--liquid-scale, 18)" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="liquid-glass-edge" x="-5%" y="-5%" width="110%" height="110%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="0.5"/>
+        <feSpecularLighting result="spec" lighting-color="white" surfaceScale="3" specularConstant="0.8" specularExponent="18">
+          <feDistantLight azimuth="135" elevation="60"/>
+        </feSpecularLighting>
+        <feComposite in="spec" in2="SourceAlpha" operator="in" result="specOnly"/>
+        <feMerge>
+          <feMergeNode in="SourceGraphic"/>
+          <feMergeNode in="specOnly"/>
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+  <!-- 动态液态背景 -->
+  <div class="bg-mesh" aria-hidden="true">
+    <span class="blob blob-1"></span>
+    <span class="blob blob-2"></span>
+    <span class="blob blob-3"></span>
+    <span class="blob blob-4"></span>
+    <span class="blob blob-5"></span>
+    <div class="grain" aria-hidden="true"></div>
+  </div>
+
+  <div class="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar glass">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" />
+          </svg>
+        </div>
+        <div class="logo-text">
+          <strong>开源音乐</strong>
+          <span>LIQUID GLASS</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-indicator" id="navIndicator" aria-hidden="true"></div>
+        <button class="nav-item" data-page="home">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></svg>
+          <span>首页</span>
+        </button>
+        <button class="nav-item" data-page="recommend">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.8H22l-6 4.4 2.3 7.2L12 16.2 5.7 20.4 8 13.2 2 8.8h7.6z" /></svg>
+          <span>推荐</span>
+        </button>
+        <button class="nav-item" data-page="search">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <span>搜索</span>
+        </button>
+        <button class="nav-item" data-page="likes">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" /></svg>
+          <span>我的喜欢</span>
+          <em class="badge" id="likesBadge" hidden>0</em>
+        </button>
+        <button class="nav-item" data-page="admin" id="adminNavBtn" hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+          <span>管理后台</span>
+          <em class="badge badge-admin">ADMIN</em>
+        </button>
+        <button class="nav-item" data-page="settings">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+          <span>设置</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-card glass-soft" id="nowPlayingMini" hidden>
+        <img id="npCover" alt="" />
+        <div class="np-info">
+          <div class="np-title" id="npTitle">未在播放</div>
+          <div class="np-artist" id="npArtist">—</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <span>© 开源音乐</span>
+        <span>冈易云端</span>
+      </div>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="content">
+      <button class="icon-btn back-fab" id="backBtn" title="后退" style="display:none">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      <header class="topbar glass" hidden>
+        <div class="topbar-left">
+          <h1 class="page-title" id="pageTitle">首页</h1>
+        </div>
+        <div class="topbar-search" id="topbarSearch">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <input id="globalSearch" type="text" placeholder="搜索歌曲、歌手、专辑…" autocomplete="off" />
+        </div>
+        <span class="admin-tag" id="adminTag" hidden>ADMIN</span>
+        <button class="icon-btn" id="shazamTopBtn" title="听歌识曲">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 0 1 10 10" /><path d="M12 22a10 10 0 0 1-10-10" /><path d="M12 6v12a6 6 0 0 1-6-6" /><path d="M12 18a6 6 0 0 0 6-6" /><circle cx="12" cy="12" r="2" /></svg>
+        </button>
+        <button class="icon-btn install-btn" id="installBtn" title="安装应用" hidden>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" /></svg>
+        </button>
+      </header>
+
+      <section class="page" id="page"></section>
+    </main>
+
+    <!-- 播放栏 -->
+    <footer class="player-bar glass" id="playerBar">
+      <div class="player-current">
+        <img id="pbCover" class="pb-cover" alt="" src="" />
+        <div class="pb-meta">
+          <div class="pb-title" id="pbTitle">尚未播放</div>
+          <div class="pb-artist" id="pbArtist">选择一首歌开始</div>
+        </div>
+        <button class="icon-btn like-btn" id="pbLike" title="喜欢">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" /></svg>
+        </button>
+      </div>
+
+      <div class="player-center">
+        <div class="player-controls">
+          <button class="icon-btn" id="shuffleBtn" title="随机播放">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5" /><path d="M4 20L21 3" /><path d="M21 16v5h-5" /><path d="M15 15l6 6" /><path d="M4 4l5 5" /></svg>
+          </button>
+          <button class="icon-btn" id="prevBtn" title="上一首">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12l9-6v12z" /></svg>
+          </button>
+          <button class="play-btn" id="playBtn" title="播放/暂停">
+            <svg class="icon-play" viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+          </button>
+          <button class="icon-btn" id="nextBtn" title="下一首">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M16 6h2v12h-2zM5.5 6l9 6-9 6z" /></svg>
+          </button>
+          <button class="icon-btn" id="repeatBtn" title="循环模式">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><path d="M7 23l-4-4 4-4" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></svg>
+          </button>
+        </div>
+        <div class="progress-row">
+          <span class="time" id="timeNow">0:00</span>
+          <div class="progress" id="progress">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-thumb" id="progressThumb"></div>
+          </div>
+          <span class="time" id="timeTotal">0:00</span>
+        </div>
+      </div>
+
+      <div class="player-right">
+        <button class="icon-btn" id="lyricBtn" title="歌词">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z" /><path d="M8 8h8M8 12h5" /></svg>
+        </button>
+        <div class="volume">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg>
+          <div class="vol-bar" id="volBar"><div class="vol-fill" id="volFill"></div></div>
+        </div>
+        <button class="icon-btn" id="queueBtn" title="播放列表">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h13M3 18h9" /><circle cx="20" cy="17" r="2" /><path d="M20 15V8" /></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 可拖拽的液态玻璃实时调节器 -->
+  <div class="liquid-adjuster glass-soft" id="liquidAdjuster" aria-hidden="true">
+    <div class="la-head" id="laHead">
+      <span class="la-dot"></span>
+      <span class="la-title">液态调节</span>
+      <button class="la-toggle" id="laToggle" title="收起/展开">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+    </div>
+    <div class="la-body" id="laBody">
+      <label class="la-row">
+        <span>模糊强度</span>
+        <input type="range" id="laBlur" min="6" max="60" step="1" value="28" />
+        <em id="laBlurVal">28</em>
+      </label>
+      <label class="la-row">
+        <span>玻璃透明度</span>
+        <input type="range" id="laOpacity" min="0" max="100" step="1" value="40" />
+        <em id="laOpacityVal">40</em>
+      </label>
+      <label class="la-row">
+        <span>高光强度</span>
+        <input type="range" id="laSpec" min="0" max="100" step="1" value="55" />
+        <em id="laSpecVal">55</em>
+      </label>
+      <label class="la-row">
+        <span>边缘折射</span>
+        <input type="range" id="laRefract" min="0" max="30" step="1" value="14" />
+        <em id="laRefractVal">14</em>
+      </label>
+      <label class="la-row">
+        <span>主色调</span>
+        <input type="range" id="laHue" min="0" max="360" step="1" value="220" />
+        <em id="laHueVal">默认</em>
+      </label>
+      <button class="la-reset" id="laReset">恢复默认</button>
+    </div>
+  </div>
+
+  <!-- 播放列表抽屉 -->
+  <div class="drawer" id="queueDrawer">
+    <div class="drawer-mask" id="queueMask"></div>
+    <aside class="drawer-panel glass">
+      <div class="drawer-head">
+        <h3>播放列表</h3>
+        <span class="drawer-count" id="queueCount">0 首</span>
+        <button class="icon-btn" id="queueClose" title="关闭">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="drawer-body" id="queueList"></div>
+    </aside>
+  </div>
+
+  <!-- 歌词面板 -->
+  <div class="lyrics-overlay" id="lyricsOverlay">
+    <div class="lyrics-bg" id="lyricsBg"></div>
+    <div class="lyrics-content">
+      <div class="lyrics-header glass">
+        <div>
+          <div class="lyrics-title" id="lyricsTitle">—</div>
+          <div class="lyrics-artist" id="lyricsArtist">—</div>
+        </div>
+        <button class="icon-btn" id="lyricsClose" title="关闭">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+      <div class="lyrics-body" id="lyricsBody">
+        <div class="lyrics-empty">暂无歌词</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shazam 听歌识曲浮层 -->
+  <div class="shazam-overlay" id="shazamOverlay" hidden>
+    <div class="shazam-mask" id="shazamMask" onclick="closeShazam()"></div>
+    <div class="shazam-panel glass">
+      <button class="icon-btn shazam-close" id="shazamClose" onclick="closeShazam()" title="关闭">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="shazam-body" id="shazamBody">
+        <div class="shazam-ring" id="shazamRing" hidden>
+          <span class="wave wave-1"></span>
+          <span class="wave wave-2"></span>
+          <span class="wave wave-3"></span>
+          <div class="mic-core">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v5" /></svg>
+          </div>
+          <div class="shazam-cancel">
+            <button class="play-btn" onclick="closeShazam()" style="background:linear-gradient(135deg,#636e72,#2d3436)">取消识别</button>
+          </div>
+        </div>
+        <div class="shazam-idle">
+          <div class="shazam-mic-big" onclick="startShazam()">
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><path d="M12 17v5" /></svg>
+          </div>
+          <h3>听歌识曲</h3>
+          <p>点击麦克风，识别周围正在播放的音乐</p>
+          <div class="shazam-hint">由 ACRCloud 提供识别能力</div>
+          <div style="margin-top:16px;display:flex;gap:8px;justify-content:center">
+            <button class="play-btn" id="shazamUploadBtn" style="padding:8px 16px;font-size:13px">上传音频识别</button>
+          </div>
+          <input type="file" id="shazamFileInput" accept="audio/*" hidden />
+        </div>
+        <div class="shazam-result" id="shazamResult" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <audio id="audio" preload="metadata"></audio>
+  <script src="/app.js"></script>
+</body>
+</html>

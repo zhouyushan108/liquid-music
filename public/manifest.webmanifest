@@ -1,0 +1,20 @@
+{
+  "name": "开源音乐 · 液态玻璃音乐",
+  "short_name": "开源音乐",
+  "description": "液态玻璃风格的开源音乐播放器，支持冈易云端流媒体播放。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07070f",
+  "theme_color": "#0a0a1c",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='512'%20height='512'%20viewBox='0%200%2024%2024'%3E%3Cdefs%3E%3ClinearGradient%20id='g'%20x1='0'%20y1='0'%20x2='1'%20y2='1'%3E%3Cstop%20offset='0'%20stop-color='%237c9bff'/%3E%3Cstop%20offset='1'%20stop-color='%23c08bff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width='24'%20height='24'%20rx='5'%20fill='url(%23g)'/%3E%3Cpath%20d='M9%2018V5l12-2v13'%20fill='none'%20stroke='%23fff'%20stroke-width='1.6'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='6'%20cy='18'%20r='2.4'%20fill='%23fff'/%3E%3Ccircle%20cx='18'%20cy='16'%20r='2.4'%20fill='%23fff'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
