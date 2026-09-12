@@ -1,0 +1,7 @@
+node.exe
+app.zip
+node_modules
+.git
+_inspect
+_stage
+*.log
